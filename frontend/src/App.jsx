@@ -1,7 +1,9 @@
 import { Routes, Route, Navigate, useNavigate, Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from './api';
 import { useParams } from 'react-router-dom';
+import './theme.css';
+import { FaRegComment, FaShare, FaRegImage, FaRegStar, FaStar } from 'react-icons/fa';
 
 function useAuth() {
   return Boolean(localStorage.getItem('token'));
@@ -33,10 +35,18 @@ function PrivateRoute({ children }) {
   return isAuth ? children : <Navigate to="/login" />;
 }
 
+function getInitials(name) {
+  if (!name) return '?';
+  const parts = name.split(' ');
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
 function NavBar() {
   const isAuth = useAuth();
   const isAdmin = useIsAdmin();
   const navigate = useNavigate();
+  const username = getCurrentUsername();
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -44,23 +54,28 @@ function NavBar() {
   };
 
   return (
-    <nav style={{ display: 'flex', gap: 16, padding: 16, borderBottom: '1px solid #eee', marginBottom: 24 }}>
-      <Link to="/">Home</Link>
-      {isAuth ? (
-        <>
-          <Link to="/feed">Feed</Link>
-          <Link to="/myposts">My Posts</Link>
-          <Link to="/starred">Starred Posts</Link>
-          <Link to="/profile">Profile</Link>
-          {isAdmin && <Link to="/admin">Admin</Link>}
-          <button onClick={handleLogout} style={{ cursor: 'pointer' }}>Logout</button>
-        </>
-      ) : (
-        <>
-          <Link to="/login">Login</Link>
-          <Link to="/register">Register</Link>
-        </>
-      )}
+    <nav>
+      <div className="nav-brand">
+        <span style={{fontWeight:900, fontSize:'1.5em', color:'var(--color-primary)'}}>ThoughtApp</span>
+      </div>
+      <div className="nav-links">
+        <Link to="/">Home</Link>
+        {isAuth ? (
+          <>
+            <Link to="/feed">Feed</Link>
+            <Link to="/myposts">My Posts</Link>
+            <Link to="/starred">Starred</Link>
+            <Link to="/profile" aria-label="Profile" className="avatar avatar-btn" title={username} style={{marginLeft:'0.5rem'}}>{getInitials(username)}</Link>
+            {isAdmin && <Link to="/admin">Admin</Link>}
+            <button onClick={handleLogout}>Logout</button>
+          </>
+        ) : (
+          <>
+            <Link to="/login">Login</Link>
+            <Link to="/register">Register</Link>
+          </>
+        )}
+      </div>
     </nav>
   );
 }
@@ -289,45 +304,52 @@ function Comments({ postId }) {
   };
 
   return (
-    <div style={{ marginTop: 12, paddingLeft: 16, borderLeft: '2px solid #eee' }}>
-      <h4 style={{ margin: '8px 0' }}>Comments</h4>
-      <form onSubmit={handleCommentSubmit} style={{ marginBottom: 8 }}>
+    <div className="mt-2">
+      <h4 className="mb-1">Comments</h4>
+      <form onSubmit={handleCommentSubmit} className="mb-1 flex" style={{alignItems:'center', gap:'0.5rem'}}>
         <input
           value={newComment}
           onChange={e => setNewComment(e.target.value)}
           placeholder="Add a comment..."
-          style={{ width: '70%', color: '#111', background: '#fff' }}
+          type="text"
+          style={{flex:1, marginBottom:0}}
         />
-        <button type="submit" style={{ marginLeft: 8 }}>Comment</button>
-        {commentError && <div style={{ color: 'red' }}>{commentError}</div>}
-        {commentSuccess && <div style={{ color: 'green' }}>{commentSuccess}</div>}
+        <button type="submit" aria-label="Send comment" style={{display:'flex', alignItems:'center', justifyContent:'center', height:'2.6em', width:'2.6em', padding:0}}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 12H20M20 12L14 6M20 12L14 18" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
       </form>
+      {commentError && <div className="text-danger mb-1">{commentError}</div>}
+      {commentSuccess && <div className="text-success mb-1">{commentSuccess}</div>}
       {loading && <div>Loading comments...</div>}
-      {error && <div style={{ color: 'red' }}>{error}</div>}
+      {error && <div className="text-danger mb-1">{error}</div>}
       {comments.length === 0 && !loading && <div>No comments yet.</div>}
-      <ul style={{ listStyle: 'none', padding: 0 }}>
+      <ul>
         {comments.map(comment => (
-          <li key={comment.id} className="comment-card">
-            <b className="comment-author">@{comment.userName}</b>
-            {editingId === comment.id ? (
-              <form onSubmit={e => handleEditSubmit(e, comment.id)} style={{ display: 'inline', marginLeft: 8 }}>
-                <input
-                  value={editContent}
-                  onChange={e => setEditContent(e.target.value)}
-                  style={{ width: '60%', color: '#111', background: '#fff' }}
-                />
-                <button type="submit" style={{ marginLeft: 4 }}>Save</button>
-                <button type="button" style={{ marginLeft: 4 }} onClick={() => setEditingId(null)}>Cancel</button>
-              </form>
-            ) : (
-              <span style={{ marginLeft: 8 }}>{comment.content}</span>
-            )}
-            {currentUser && comment.userName === currentUser && editingId !== comment.id && (
-              <>
-                <button style={{ marginLeft: 8 }} onClick={() => handleEdit(comment)}>Edit</button>
-                <button style={{ marginLeft: 4 }} onClick={() => handleDelete(comment.id)}>Delete</button>
-              </>
-            )}
+          <li key={comment.id} className="card compact">
+            <div className="user-header mb-1">
+              <span className="avatar" title={comment.userName}>{getInitials(comment.userName)}</span>
+              <span className="user-name">@{comment.userName}</span>
+            </div>
+            <div style={{flex:1, display:'flex', flexDirection:'column'}}>
+              {editingId === comment.id ? (
+                <form onSubmit={e => handleEditSubmit(e, comment.id)} className="flex gap-1 mb-1">
+                  <input
+                    value={editContent}
+                    onChange={e => setEditContent(e.target.value)}
+                  />
+                  <button type="submit">Save</button>
+                  <button type="button" onClick={() => setEditingId(null)}>Cancel</button>
+                </form>
+              ) : (
+                <div className="mb-1" style={{wordBreak:'break-word', whiteSpace:'pre-line', marginLeft:'0.5rem', marginTop:'0.2rem'}}>{comment.content}</div>
+              )}
+              {currentUser && comment.userName === currentUser && editingId !== comment.id && (
+                <div className="flex gap-1" style={{justifyContent:'flex-end'}}>
+                  <button onClick={() => handleEdit(comment)}>Edit</button>
+                  <button onClick={() => handleDelete(comment.id)}>Delete</button>
+                </div>
+              )}
+            </div>
           </li>
         ))}
       </ul>
@@ -342,6 +364,40 @@ function Home() {
   const [newPost, setNewPost] = useState('');
   const [postError, setPostError] = useState('');
   const [postSuccess, setPostSuccess] = useState('');
+  const [showComments, setShowComments] = useState({});
+  const toggleComments = useCallback((postId) => {
+    setShowComments(prev => ({ ...prev, [postId]: !prev[postId] }));
+  }, []);
+
+  // Add state for starred posts
+  const [starredPosts, setStarredPosts] = useState({});
+  // Fetch starred status for all posts
+  useEffect(() => {
+    async function fetchStarred() {
+      try {
+        const res = await api.get('/user/starred');
+        const map = {};
+        res.data.forEach(post => { map[post.id] = true; });
+        setStarredPosts(map);
+      } catch {
+        setStarredPosts({});
+      }
+    }
+    fetchStarred();
+  }, [posts]);
+  // Star/unstar handlers
+  const handleStar = async (postId) => {
+    try {
+      await api.post(`/user/star/${postId}`);
+      setStarredPosts(prev => ({ ...prev, [postId]: true }));
+    } catch {}
+  };
+  const handleUnstar = async (postId) => {
+    try {
+      await api.delete(`/user/unstar/${postId}`);
+      setStarredPosts(prev => ({ ...prev, [postId]: false }));
+    } catch {}
+  };
 
   useEffect(() => {
     fetchPosts();
@@ -384,42 +440,58 @@ function Home() {
   };
 
   return (
-    <div className="main-feed">
-      <h2>Public Feed</h2>
-      <form onSubmit={handlePostSubmit} style={{ marginBottom: 24 }}>
-        <div className="form-group">
-          <textarea
-            value={newPost}
-            onChange={e => setNewPost(e.target.value)}
-            placeholder="What's on your mind?"
-            rows={3}
-            style={{ width: '100%', resize: 'vertical' }}
-          />
-        </div>
-        <button type="submit">Post</button>
-        {postError && <div style={{ color: 'red' }}>{postError}</div>}
-        {postSuccess && <div style={{ color: 'green' }}>{postSuccess}</div>}
-      </form>
-      {loading && <div>Loading...</div>}
-      {error && <div style={{ color: 'red' }}>{error}</div>}
-      {posts.length === 0 && !loading && <div>No posts yet.</div>}
-      <ul style={{ listStyle: 'none', padding: 0 }}>
-        {posts.map(post => (
-          <li key={post.id} className="card">
-            <div>
-              <b><Link to={`/user/${post.username}`}>@{post.username}</Link></b>
-              <FollowButton
-                username={post.username}
-                isFollowing={followStatus[post.username]}
-                onToggle={handleFollowToggle}
-              />
-              <StarButton postId={post.id} />
-            </div>
-            <div>{post.content}</div>
-            <Comments postId={post.id} />
-          </li>
-        ))}
-      </ul>
+    <div className="container">
+      <div className="main-feed">
+        <h2 style={{fontWeight: 900, color: 'var(--color-primary)', marginBottom: '1.5rem'}}>Public Feed</h2>
+        <form onSubmit={handlePostSubmit} className="mb-2" style={{background:'#f8fafc', borderRadius:'22px', padding:'1.2em 1.5em', boxShadow:'0 2px 8px rgba(30,41,59,0.08)', display:'flex', flexDirection:'column', gap:'1rem', marginBottom:'2.5rem'}}>
+          <div style={{display:'flex', alignItems:'center', gap:'1rem'}}>
+            <span className="avatar" title="You">{getInitials(getCurrentUsername() || 'U')}</span>
+            <textarea
+              value={newPost}
+              onChange={e => setNewPost(e.target.value)}
+              placeholder="What's on your mind?"
+              rows={2}
+              className="post-input"
+              style={{resize:'none', margin:0, flex:1}}
+            />
+          </div>
+          <div style={{display:'flex', alignItems:'center', justifyContent:'flex-end'}}>
+            <button type="submit" className="post-btn">Post</button>
+          </div>
+          {postError && <div className="text-danger mt-1">{postError}</div>}
+          {postSuccess && <div className="text-success mt-1">{postSuccess}</div>}
+        </form>
+        {loading && <div>Loading...</div>}
+        {error && <div className="text-danger">{error}</div>}
+        {posts.length === 0 && !loading && <div>No posts yet.</div>}
+        <ul>
+          {posts.map(post => (
+            <li key={post.id} className="card" style={{padding:'2rem 2rem 1.2rem 2rem', marginBottom:'2.5rem'}}>
+              <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.7rem'}}>
+                <div style={{display:'flex', alignItems:'center', gap:'1rem'}}>
+                  <span className="avatar" title={post.username}>{getInitials(post.username)}</span>
+                  <div>
+                    <span className="display-name">{post.username}</span>
+                    <span className="username">@{post.username}</span>
+                    <span className="timestamp">· 2h</span>
+                  </div>
+                </div>
+              </div>
+              <div className="mb-2" style={{fontSize:'1.13em', lineHeight:'1.6', marginLeft:'3.2rem'}}>{post.content}</div>
+              <div className="action-bar">
+                <button className="icon-btn" title="Comment" onClick={() => toggleComments(post.id)}>
+                  <FaRegComment />
+                  {/* Optionally show comment count here */}
+                </button>
+                <button className="icon-btn" title={starredPosts[post.id] ? 'Unstar' : 'Star'} onClick={() => starredPosts[post.id] ? handleUnstar(post.id) : handleStar(post.id)}>
+                  {starredPosts[post.id] ? <FaStar style={{color:'#f5c518'}} /> : <FaRegStar />}
+                </button>
+              </div>
+              {showComments[post.id] && <Comments postId={post.id} />}
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
@@ -443,21 +515,21 @@ function Login() {
   };
 
   return (
-    <div style={{ maxWidth: 350, margin: '2rem auto' }}>
+    <div className="card" style={{ maxWidth: 350, margin: '2rem auto' }}>
       <h2>Login</h2>
       <form onSubmit={handleSubmit}>
-        <div>
+        <div className="form-group">
           <label>Username</label>
           <input value={username} onChange={e => setUsername(e.target.value)} required />
         </div>
-        <div>
+        <div className="form-group">
           <label>Password</label>
           <input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
         </div>
-        {error && <div style={{ color: 'red' }}>{error}</div>}
+        {error && <div className="text-danger mb-1">{error}</div>}
         <button type="submit">Login</button>
       </form>
-      <p>Don't have an account? <Link to="/register">Register</Link></p>
+      <p className="mt-2 text-muted">Don't have an account? <Link to="/register">Register</Link></p>
     </div>
   );
 }
@@ -486,34 +558,34 @@ function Register() {
   };
 
   return (
-    <div style={{ maxWidth: 350, margin: '2rem auto' }}>
+    <div className="card" style={{ maxWidth: 350, margin: '2rem auto' }}>
       <h2>Register</h2>
       <form onSubmit={handleSubmit}>
-        <div>
+        <div className="form-group">
           <label>Username</label>
           <input name="username" value={form.username} onChange={handleChange} required />
         </div>
-        <div>
+        <div className="form-group">
           <label>Password</label>
           <input type="password" name="password" value={form.password} onChange={handleChange} required />
         </div>
-        <div>
+        <div className="form-group">
           <label>Display Name</label>
           <input name="displayName" value={form.displayName} onChange={handleChange} />
         </div>
-        <div>
+        <div className="form-group">
           <label>Bio</label>
           <input name="bio" value={form.bio} onChange={handleChange} />
         </div>
-        <div>
+        <div className="form-group">
           <label>Location</label>
           <input name="location" value={form.location} onChange={handleChange} />
         </div>
-        {error && <div style={{ color: 'red' }}>{error}</div>}
-        {success && <div style={{ color: 'green' }}>{success}</div>}
+        {error && <div className="text-danger mb-1">{error}</div>}
+        {success && <div className="text-success mb-1">{success}</div>}
         <button type="submit">Register</button>
       </form>
-      <p>Already have an account? <Link to="/login">Login</Link></p>
+      <p className="mt-2 text-muted">Already have an account? <Link to="/login">Login</Link></p>
     </div>
   );
 }
@@ -574,45 +646,53 @@ function Profile() {
   };
 
   return (
-    <div style={{ maxWidth: 400, margin: '2rem auto' }}>
-      <h2>My Profile</h2>
-      {loading && <div>Loading...</div>}
-      {error && <div style={{ color: 'red' }}>{error}</div>}
-      {success && <div style={{ color: 'green' }}>{success}</div>}
-      {profile && !editing && (
-        <div style={{ border: '1px solid #ccc', borderRadius: 8, padding: 16 }}>
-          <div><b>Display Name:</b> {profile.displayName}</div>
-          <div><b>Bio:</b> {profile.bio}</div>
-          <div><b>Location:</b> {profile.location}</div>
-          <button style={{ marginTop: 16, marginRight: 8 }} onClick={handleEdit}>Edit Profile</button>
-          <button style={{ marginTop: 16, marginRight: 8 }} onClick={() => setShowFollowers(f => !f)}>
-            {showFollowers ? 'Hide Followers' : 'View Followers'}
-          </button>
-          <button style={{ marginTop: 16 }} onClick={() => setShowFollowing(f => !f)}>
-            {showFollowing ? 'Hide Following' : 'View Following'}
-          </button>
+    <div className="container">
+      <div className="profile-card flex gap-2">
+        <div className="user-header">
+          <span className="avatar" title={profile?.displayName || 'Me'}>{getInitials(profile?.displayName || 'Me')}</span>
+          <span className="user-name">Me</span>
         </div>
-      )}
-      {editing && (
-        <form onSubmit={handleSubmit} style={{ border: '1px solid #ccc', borderRadius: 8, padding: 16 }}>
-          <div>
-            <label>Display Name</label>
-            <input name="displayName" value={form.displayName} onChange={handleChange} />
-          </div>
-          <div>
-            <label>Bio</label>
-            <input name="bio" value={form.bio} onChange={handleChange} />
-          </div>
-          <div>
-            <label>Location</label>
-            <input name="location" value={form.location} onChange={handleChange} />
-          </div>
-          <button type="submit" style={{ marginTop: 16 }}>Save</button>
-          <button type="button" style={{ marginLeft: 8 }} onClick={() => setEditing(false)}>Cancel</button>
-        </form>
-      )}
-      {showFollowers && <Followers />}
-      {showFollowing && <FollowingList />}
+        <div style={{flex:1}}>
+          <h2>My Profile</h2>
+          {loading && <div>Loading...</div>}
+          {error && <div className="text-danger mb-1">{error}</div>}
+          {success && <div className="text-success mb-1">{success}</div>}
+          {profile && !editing && (
+            <div>
+              <div><b>Display Name:</b> {profile.displayName}</div>
+              <div><b>Bio:</b> {profile.bio}</div>
+              <div><b>Location:</b> {profile.location}</div>
+              <button className="mt-2 mb-1" onClick={handleEdit}>Edit Profile</button>
+              <button className="mt-2 mb-1" onClick={() => setShowFollowers(f => !f)}>
+                {showFollowers ? 'Hide Followers' : 'View Followers'}
+              </button>
+              <button className="mt-2 mb-1" onClick={() => setShowFollowing(f => !f)}>
+                {showFollowing ? 'Hide Following' : 'View Following'}
+              </button>
+            </div>
+          )}
+          {editing && (
+            <form onSubmit={handleSubmit}>
+              <div className="form-group">
+                <label>Display Name</label>
+                <input name="displayName" value={form.displayName} onChange={handleChange} />
+              </div>
+              <div className="form-group">
+                <label>Bio</label>
+                <input name="bio" value={form.bio} onChange={handleChange} />
+              </div>
+              <div className="form-group">
+                <label>Location</label>
+                <input name="location" value={form.location} onChange={handleChange} />
+              </div>
+              <button type="submit" className="mt-2">Save</button>
+              <button type="button" className="mt-2 ml-1" onClick={() => setEditing(false)}>Cancel</button>
+            </form>
+          )}
+          {showFollowers && <Followers />}
+          {showFollowing && <FollowingList />}
+        </div>
+      </div>
     </div>
   );
 }
@@ -620,6 +700,10 @@ function Feed() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showComments, setShowComments] = useState({});
+  const toggleComments = useCallback((postId) => {
+    setShowComments(prev => ({ ...prev, [postId]: !prev[postId] }));
+  }, []);
 
   useEffect(() => {
     fetchFeed();
@@ -643,29 +727,68 @@ function Feed() {
   const usernames = Array.from(new Set(posts.map(post => post.username)));
   const [followStatus, handleFollowToggle] = useFollowStatus(usernames);
 
+  // Starred state for Feed
+  const [starredPosts, setStarredPosts] = useState({});
+  useEffect(() => {
+    async function fetchStarred() {
+      try {
+        const res = await api.get('/user/starred');
+        const map = {};
+        res.data.forEach(post => { map[post.id] = true; });
+        setStarredPosts(map);
+      } catch {
+        setStarredPosts({});
+      }
+    }
+    fetchStarred();
+  }, [posts]);
+  const handleStar = async (postId) => {
+    try {
+      await api.post(`/user/star/${postId}`);
+      setStarredPosts(prev => ({ ...prev, [postId]: true }));
+    } catch {}
+  };
+  const handleUnstar = async (postId) => {
+    try {
+      await api.delete(`/user/unstar/${postId}`);
+      setStarredPosts(prev => ({ ...prev, [postId]: false }));
+    } catch {}
+  };
+
   return (
-    <div className="main-feed">
-      <h2>Personal Feed</h2>
-      {loading && <div>Loading...</div>}
-      {error && <div style={{ color: 'red' }}>{error}</div>}
-      {posts.length === 0 && !loading && <div>No posts from users you follow yet.</div>}
-      <ul style={{ listStyle: 'none', padding: 0 }}>
-        {posts.map(post => (
-          <li key={post.id} className="card">
-            <div>
-              <b><Link to={`/user/${post.username}`}>@{post.username}</Link></b>
-              <FollowButton
-                username={post.username}
-                isFollowing={followStatus[post.username]}
-                onToggle={handleFollowToggle}
-              />
-              <StarButton postId={post.id} />
-            </div>
-            <div>{post.content}</div>
-            <Comments postId={post.id} />
-          </li>
-        ))}
-      </ul>
+    <div className="container">
+      <div className="main-feed">
+        <h2>Personal Feed</h2>
+        {loading && <div>Loading...</div>}
+        {error && <div className="text-danger mb-1">{error}</div>}
+        {posts.length === 0 && !loading && <div>No posts from users you follow yet.</div>}
+        <ul>
+          {posts.map(post => (
+            <li key={post.id} className="card" style={{padding:'2rem 2rem 1.2rem 2rem', marginBottom:'2.5rem'}}>
+              <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.7rem'}}>
+                <div style={{display:'flex', alignItems:'center', gap:'1rem'}}>
+                  <span className="avatar" title={post.username}>{getInitials(post.username)}</span>
+                  <div>
+                    <span className="display-name">{post.username}</span>
+                    <span className="username">@{post.username}</span>
+                    <span className="timestamp">· 2h</span>
+                  </div>
+                </div>
+              </div>
+              <div className="mb-2" style={{fontSize:'1.13em', lineHeight:'1.6', marginLeft:'3.2rem'}}>{post.content}</div>
+              <div className="action-bar">
+                <button className="icon-btn" title="Comment" onClick={() => toggleComments(post.id)}>
+                  <FaRegComment />
+                </button>
+                <button className="icon-btn" title={starredPosts[post.id] ? 'Unstar' : 'Star'} onClick={() => starredPosts[post.id] ? handleUnstar(post.id) : handleStar(post.id)}>
+                  {starredPosts[post.id] ? <FaStar style={{color:'#f5c518'}} /> : <FaRegStar />}
+                </button>
+              </div>
+              {showComments[post.id] && <Comments postId={post.id} />}
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
@@ -690,24 +813,32 @@ function Admin() {
   };
 
   return (
-    <div style={{ maxWidth: 600, margin: '2rem auto' }}>
-      <h2>Admin Dashboard</h2>
-      <button onClick={fetchUsers} style={{ marginBottom: 16 }}>Show All Users</button>
-      {loading && <div>Loading users...</div>}
-      {error && <div style={{ color: 'red' }}>{error}</div>}
-      {showUsers && (
-        <ul style={{ listStyle: 'none', padding: 0 }}>
-          {users.map((user, idx) => (
-            <li key={idx} style={{ border: '1px solid #ccc', borderRadius: 8, margin: '1rem 0', padding: 16 }}>
-              <div><b>Username:</b> {user.username}</div>
-              <div><b>Display Name:</b> {user.displayName}</div>
-              <div><b>Bio:</b> {user.bio}</div>
-              <div><b>Location:</b> {user.location}</div>
-              <div><b>Roles:</b> {user.roles && user.roles.map(r => r.name).join(', ')}</div>
-            </li>
-          ))}
-        </ul>
-      )}
+    <div className="container">
+      <div className="admin-card">
+        <h2>Admin Dashboard</h2>
+        <button className="mb-1" onClick={fetchUsers}>Show All Users</button>
+        {loading && <div>Loading users...</div>}
+        {error && <div className="text-danger mb-1">{error}</div>}
+        {showUsers && (
+          <ul>
+            {users.map((user, idx) => (
+              <li key={idx} className="flex gap-2 mb-1 card">
+                <div className="user-header">
+                  <span className="avatar" title={user.displayName}>{getInitials(user.displayName)}</span>
+                  <span className="user-name">@{user.username}</span>
+                </div>
+                <div>
+                  <div><b>Username:</b> {user.username}</div>
+                  <div><b>Display Name:</b> {user.displayName}</div>
+                  <div><b>Bio:</b> {user.bio}</div>
+                  <div><b>Location:</b> {user.location}</div>
+                  <div><b>Roles:</b> {user.roles && user.roles.map(r => r.name).join(', ')}</div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
@@ -719,6 +850,38 @@ function MyPosts() {
   const [editingId, setEditingId] = useState(null);
   const [editContent, setEditContent] = useState('');
   const [actionMsg, setActionMsg] = useState('');
+  const [showComments, setShowComments] = useState({});
+  const toggleComments = useCallback((postId) => {
+    setShowComments(prev => ({ ...prev, [postId]: !prev[postId] }));
+  }, []);
+
+  // Starred state for MyPosts
+  const [starredPosts, setStarredPosts] = useState({});
+  useEffect(() => {
+    async function fetchStarred() {
+      try {
+        const res = await api.get('/user/starred');
+        const map = {};
+        res.data.forEach(post => { map[post.id] = true; });
+        setStarredPosts(map);
+      } catch {
+        setStarredPosts({});
+      }
+    }
+    fetchStarred();
+  }, [posts]);
+  const handleStar = async (postId) => {
+    try {
+      await api.post(`/user/star/${postId}`);
+      setStarredPosts(prev => ({ ...prev, [postId]: true }));
+    } catch {}
+  };
+  const handleUnstar = async (postId) => {
+    try {
+      await api.delete(`/user/unstar/${postId}`);
+      setStarredPosts(prev => ({ ...prev, [postId]: false }));
+    } catch {}
+  };
 
   const fetchMyPosts = async () => {
     setLoading(true);
@@ -767,46 +930,64 @@ function MyPosts() {
     }
   };
 
+  const currentUsername = getCurrentUsername();
+
   return (
-    <div className="main-feed">
-      <h2>My Posts</h2>
-      {loading && <div>Loading...</div>}
-      {error && <div style={{ color: 'red' }}>{error}</div>}
-      {actionMsg && <div style={{ color: actionMsg.includes('success') ? 'green' : 'red' }}>{actionMsg}</div>}
-      {posts.length === 0 && !loading && <div>You have not posted anything yet.</div>}
-      <ul style={{ listStyle: 'none', padding: 0 }}>
-        {posts.map(post => (
-          <li key={post.id} className="card">
-            <div>
-              {editingId === post.id ? (
-                <form onSubmit={e => handleEditSubmit(e, post.id)}>
-                  <textarea
-                    value={editContent}
-                    onChange={e => setEditContent(e.target.value)}
-                    rows={3}
-                    style={{ width: '100%', resize: 'vertical', marginBottom: 8 }}
-                  />
-                  <br />
-                  <button type="submit">Save</button>
-                  <button type="button" style={{ marginLeft: 8 }} onClick={() => setEditingId(null)}>Cancel</button>
-                </form>
-              ) : (
-    <>
-      <div>
-                    <b>Me</b>
-                    <StarButton postId={post.id} />
+    <div className="container">
+      <div className="main-feed">
+        <h2>My Posts</h2>
+        {loading && <div>Loading...</div>}
+        {error && <div className="text-danger mb-1">{error}</div>}
+        {actionMsg && <div className={actionMsg.includes('success') ? 'text-success mb-1' : 'text-danger mb-1'}>{actionMsg}</div>}
+        {posts.length === 0 && !loading && <div>You have not posted anything yet.</div>}
+        <ul>
+          {posts.map(post => (
+            <li key={post.id} className="card" style={{padding:'2rem 2rem 1.2rem 2rem', marginBottom:'2.5rem'}}>
+              <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.7rem'}}>
+                <div style={{display:'flex', alignItems:'center', gap:'1rem'}}>
+                  <span className="avatar" title={currentUsername}>{getInitials(currentUsername)}</span>
+                  <div>
+                    <span className="display-name">{currentUsername}</span>
+                    <span className="username">@{currentUsername}</span>
+                    <span className="timestamp">· 2h</span>
                   </div>
-                  <div>{post.content}</div>
-                  <button style={{ marginTop: 8, marginRight: 8 }} onClick={() => handleEdit(post)}>Edit</button>
-                  <button style={{ marginTop: 8 }} onClick={() => handleDelete(post.id)}>Delete</button>
-                </>
-              )}
-            </div>
-            <Comments postId={post.id} />
-          </li>
-        ))}
-      </ul>
+                </div>
+              </div>
+              <div style={{flex:1}}>
+                {editingId === post.id ? (
+                  <form onSubmit={e => handleEditSubmit(e, post.id)}>
+                    <textarea
+                      value={editContent}
+                      onChange={e => setEditContent(e.target.value)}
+                      rows={3}
+                      className="mb-1"
+                      style={{ resize: 'vertical' }}
+                    />
+                    <button type="submit">Save</button>
+                    <button type="button" className="ml-1" onClick={() => setEditingId(null)}>Cancel</button>
+                  </form>
+                ) : (
+                  <>
+                    <div className="mb-2" style={{fontSize:'1.13em', lineHeight:'1.6', marginLeft:'3.2rem'}}>{post.content}</div>
+                    <div className="action-bar">
+                      <button className="icon-btn" title="Comment" onClick={() => toggleComments(post.id)}>
+                        <FaRegComment />
+                      </button>
+                      <button className="icon-btn" title={starredPosts[post.id] ? 'Unstar' : 'Star'} onClick={() => starredPosts[post.id] ? handleUnstar(post.id) : handleStar(post.id)}>
+                        {starredPosts[post.id] ? <FaStar style={{color:'#f5c518'}} /> : <FaRegStar />}
+                      </button>
+                    </div>
+                    <button className="mt-1 mr-1" onClick={() => handleEdit(post)}>Edit</button>
+                    <button className="mt-1" onClick={() => handleDelete(post.id)}>Delete</button>
+                  </>
+                )}
+                {showComments[post.id] && <Comments postId={post.id} />}
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
+    </div>
   );
 }
 
@@ -871,29 +1052,37 @@ function UserProfile() {
   };
 
   return (
-    <div style={{ maxWidth: 400, margin: '2rem auto' }}>
-      <h2>User Profile</h2>
-      {loading && <div>Loading...</div>}
-      {error && <div style={{ color: 'red' }}>{error}</div>}
-      {profile && (
-        <div style={{ border: '1px solid #ccc', borderRadius: 8, padding: 16 }}>
-          <div><b>Display Name:</b> {profile.displayName}</div>
-          <div><b>Bio:</b> {profile.bio}</div>
-          <div><b>Location:</b> {profile.location}</div>
-          <div style={{ marginTop: 16 }}>
-            {isFollowing ? (
-              <button onClick={handleUnfollow} disabled={followLoading}>
-                Unfollow
-              </button>
-            ) : (
-              <button onClick={handleFollow} disabled={followLoading}>
-                Follow
-        </button>
-            )}
-            {followError && <div style={{ color: 'red', marginTop: 8 }}>{followError}</div>}
-          </div>
+    <div className="container">
+      <div className="profile-card flex gap-2">
+        <div className="user-header">
+          <span className="avatar" title={profile?.displayName || username}>{getInitials(profile?.displayName || username)}</span>
+          <span className="user-name">@{username}</span>
         </div>
-      )}
+        <div style={{flex:1}}>
+          <h2>User Profile</h2>
+          {loading && <div>Loading...</div>}
+          {error && <div className="text-danger mb-1">{error}</div>}
+          {profile && (
+            <div>
+              <div><b>Display Name:</b> {profile.displayName}</div>
+              <div><b>Bio:</b> {profile.bio}</div>
+              <div><b>Location:</b> {profile.location}</div>
+              <div className="mt-2">
+                {isFollowing ? (
+                  <button onClick={handleUnfollow} disabled={followLoading} className="mr-1">
+                    Unfollow
+                  </button>
+                ) : (
+                  <button onClick={handleFollow} disabled={followLoading} className="mr-1">
+                    Follow
+                  </button>
+                )}
+                {followError && <div className="text-danger mt-1">{followError}</div>}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -920,17 +1109,23 @@ function Followers() {
   }, []);
 
   return (
-    <div style={{ maxWidth: 400, margin: '2rem auto' }}>
+    <div className="profile-card">
       <h2>My Followers</h2>
       {loading && <div>Loading...</div>}
-      {error && <div style={{ color: 'red' }}>{error}</div>}
+      {error && <div className="text-danger mb-1">{error}</div>}
       {followers.length === 0 && !loading && <div>You have no followers yet.</div>}
-      <ul style={{ listStyle: 'none', padding: 0 }}>
+      <ul>
         {followers.map((user, idx) => (
-          <li key={idx} style={{ border: '1px solid #ccc', borderRadius: 8, margin: '1rem 0', padding: 16 }}>
-            <div><b>{user.displayName}</b></div>
-            <div>{user.bio}</div>
-            <div>{user.location}</div>
+          <li key={idx} className="flex gap-2 mb-1 card">
+            <div className="user-header">
+              <span className="avatar" title={user.displayName}>{getInitials(user.displayName)}</span>
+              <span className="user-name">@{user.username}</span>
+            </div>
+            <div>
+              <div><b>{user.displayName}</b></div>
+              <div>{user.bio}</div>
+              <div>{user.location}</div>
+            </div>
           </li>
         ))}
       </ul>
@@ -960,17 +1155,23 @@ function FollowingList() {
   }, []);
 
   return (
-    <div style={{ maxWidth: 400, margin: '1rem auto' }}>
+    <div className="profile-card">
       <h3>Following</h3>
       {loading && <div>Loading...</div>}
-      {error && <div style={{ color: 'red' }}>{error}</div>}
+      {error && <div className="text-danger mb-1">{error}</div>}
       {following.length === 0 && !loading && !error && <div>You are not following anyone yet.</div>}
-      <ul style={{ listStyle: 'none', padding: 0 }}>
+      <ul>
         {following.map((user, idx) => (
-          <li key={idx} style={{ border: '1px solid #ccc', borderRadius: 8, margin: '1rem 0', padding: 16 }}>
-            <div><b>{user.displayName}</b></div>
-            <div>{user.bio}</div>
-            <div>{user.location}</div>
+          <li key={idx} className="flex gap-2 mb-1 card">
+            <div className="user-header">
+              <span className="avatar" title={user.displayName}>{getInitials(user.displayName)}</span>
+              <span className="user-name">@{user.username}</span>
+            </div>
+            <div>
+              <div><b>{user.displayName}</b></div>
+              <div>{user.bio}</div>
+              <div>{user.location}</div>
+            </div>
           </li>
         ))}
       </ul>
@@ -982,6 +1183,10 @@ function StarredPosts() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showComments, setShowComments] = useState({});
+  const toggleComments = useCallback((postId) => {
+    setShowComments(prev => ({ ...prev, [postId]: !prev[postId] }));
+  }, []);
 
   useEffect(() => {
     async function fetchStarred() {
@@ -999,20 +1204,65 @@ function StarredPosts() {
     fetchStarred();
   }, []);
 
+  // Starred state for StarredPosts
+  const [starredPosts, setStarredPosts] = useState({});
+  useEffect(() => {
+    async function fetchStarred() {
+      try {
+        const res = await api.get('/user/starred');
+        const map = {};
+        res.data.forEach(post => { map[post.id] = true; });
+        setStarredPosts(map);
+      } catch {
+        setStarredPosts({});
+      }
+    }
+    fetchStarred();
+  }, [posts]);
+  const handleStar = async (postId) => {
+    try {
+      await api.post(`/user/star/${postId}`);
+      setStarredPosts(prev => ({ ...prev, [postId]: true }));
+    } catch {}
+  };
+  const handleUnstar = async (postId) => {
+    try {
+      await api.delete(`/user/unstar/${postId}`);
+      setStarredPosts(prev => ({ ...prev, [postId]: false }));
+    } catch {}
+  };
+
   return (
-    <div style={{ maxWidth: 600, margin: '2rem auto' }}>
-      <h2>Starred Posts</h2>
-      {loading && <div>Loading...</div>}
-      {error && <div style={{ color: 'red' }}>{error}</div>}
-      {posts.length === 0 && !loading && <div>You have not starred any posts yet.</div>}
-      <ul style={{ listStyle: 'none', padding: 0 }}>
-        {posts.map(post => (
-          <li key={post.id} style={{ border: '1px solid #ccc', borderRadius: 8, margin: '1rem 0', padding: 16 }}>
-            <div><b><Link to={`/user/${post.username}`}>@{post.username}</Link></b></div>
-            <div>{post.content}</div>
-          </li>
-        ))}
-      </ul>
+    <div className="container">
+      <div className="main-feed">
+        <h2>Starred Posts</h2>
+        {loading && <div>Loading...</div>}
+        {error && <div className="text-danger mb-1">{error}</div>}
+        {posts.length === 0 && !loading && <div>You have not starred any posts yet.</div>}
+        <ul>
+          {posts.map(post => (
+            <li key={post.id} className="card" style={{padding:'2rem 2rem 1.2rem 2rem', marginBottom:'2.5rem'}}>
+              <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.7rem'}}>
+                <div style={{display:'flex', alignItems:'center', gap:'1rem'}}>
+                  <span className="avatar" title={post.username}>{getInitials(post.username)}</span>
+                  <div>
+                    <span className="display-name">{post.username}</span>
+                    <span className="username">@{post.username}</span>
+                    <span className="timestamp">· 2h</span>
+                  </div>
+                </div>
+              </div>
+              <div className="mb-2" style={{fontSize:'1.13em', lineHeight:'1.6', marginLeft:'3.2rem'}}>{post.content}</div>
+              <div className="action-bar">
+                <button className="icon-btn" title={starredPosts[post.id] ? 'Unstar' : 'Star'} onClick={() => starredPosts[post.id] ? handleUnstar(post.id) : handleStar(post.id)}>
+                  {starredPosts[post.id] ? <FaStar style={{color:'#f5c518'}} /> : <FaRegStar />}
+                </button>
+              </div>
+              {showComments[post.id] && <Comments postId={post.id} />}
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
