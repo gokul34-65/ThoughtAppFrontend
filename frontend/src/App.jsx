@@ -518,7 +518,11 @@ function Login() {
       localStorage.setItem('token', res.data.replace('Bearer ', ''));
       navigate('/feed');
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed');
+      if (err.response?.status === 404 || err.response?.status === 401) {
+        setError('Username or password is incorrect.');
+      } else {
+        setError(err.response?.data?.error || 'Login failed');
+      }
     }
   };
 
@@ -556,12 +560,20 @@ function Register() {
     e.preventDefault();
     setError('');
     setSuccess('');
+    if (!form.username.trim() || !form.password.trim() || !form.displayName.trim()) {
+      setError('Please fill in username, password, and display name.');
+      return;
+    }
     try {
       await api.post('/auth/register', form);
       setSuccess('Registration successful! Please log in.');
       setTimeout(() => navigate('/login'), 1500);
     } catch (err) {
-      setError(err.response?.data?.error || 'Registration failed');
+      if (err.response?.status === 409) {
+        setError('That username is already used.');
+      } else {
+        setError(err.response?.data?.error || 'Registration failed');
+      }
     }
   };
 
@@ -1234,6 +1246,10 @@ function StarredPosts() {
       setStarredPosts(prev => ({ ...prev, [postId]: false }));
     } catch {}
   };
+
+  // Add this missing hook:
+  const usernames = Array.from(new Set(posts.map(post => post.username)));
+  const [followStatus, handleFollowToggle] = useFollowStatus(usernames);
 
   return (
     <div className="container">
