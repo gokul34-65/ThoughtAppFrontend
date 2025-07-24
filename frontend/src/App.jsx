@@ -76,7 +76,7 @@ function NavBar() {
             <Link to="/feed" onClick={()=>setMenuOpen(false)}>Feed</Link>
             <Link to="/myposts" onClick={()=>setMenuOpen(false)}>My Posts</Link>
             <Link to="/starred" onClick={()=>setMenuOpen(false)}>Starred</Link>
-            <Link to="/profile" aria-label="Profile" className="avatar avatar-btn" title={username} style={{marginLeft:'0.5rem'}} onClick={()=>setMenuOpen(false)}>{getInitials(username)}</Link>
+            <Link to="/profile" onClick={()=>setMenuOpen(false)}>Profile</Link>
             {isAdmin && <Link to="/admin" onClick={()=>setMenuOpen(false)}>Admin</Link>}
             <button onClick={handleLogout}>Logout</button>
           </>
@@ -631,10 +631,10 @@ function Profile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ displayName: '', bio: '', location: '' });
-  const [success, setSuccess] = useState('');
+  const [editForm, setEditForm] = useState({ displayName: '', bio: '', location: '' });
   const [showFollowers, setShowFollowers] = useState(false);
   const [showFollowing, setShowFollowing] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     async function fetchProfile() {
@@ -643,10 +643,10 @@ function Profile() {
       try {
         const res = await api.get('/user/me');
         setProfile(res.data);
-        setForm({
+        setEditForm({
           displayName: res.data.displayName || '',
           bio: res.data.bio || '',
-          location: res.data.location || '',
+          location: res.data.location || ''
         });
       } catch (err) {
         setError('Failed to load profile');
@@ -657,78 +657,63 @@ function Profile() {
     fetchProfile();
   }, []);
 
-  const handleEdit = () => {
-    setEditing(true);
-    setSuccess('');
-    setError('');
-  };
-
-  const handleChange = e => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
+  const handleEdit = () => setEditing(true);
+  const handleCancel = () => setEditing(false);
+  const handleChange = e => setEditForm({ ...editForm, [e.target.name]: e.target.value });
+  const handleSubmit = async e => {
     e.preventDefault();
     setError('');
-    setSuccess('');
     try {
-      await api.put('/user/profile', form);
-      setProfile({ ...profile, ...form });
-      setSuccess('Profile updated successfully!');
+      await api.put('/user/profile', editForm);
+      setProfile({ ...profile, ...editForm });
       setEditing(false);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to update profile');
+      setError('Failed to update profile');
     }
   };
 
+  if (loading) return <div className="card" style={{ maxWidth: 500, margin: '2.5rem auto' }}>Loading...</div>;
+  if (error) return <div className="card" style={{ maxWidth: 500, margin: '2.5rem auto' }}>{error}</div>;
+
   return (
-    <div className="container">
-      <div className="profile-card flex gap-2">
-        <div className="user-header">
-          <span className="avatar" title={profile?.displayName || 'Me'}>{getInitials(profile?.displayName || 'Me')}</span>
-          <span className="user-name">Me</span>
-        </div>
-        <div style={{flex:1}}>
-          <h2>My Profile</h2>
-          {loading && <div>Loading...</div>}
-          {error && <div className="text-danger mb-1">{error}</div>}
-          {success && <div className="text-success mb-1">{success}</div>}
-          {profile && !editing && (
-            <div>
-              <div><b>Display Name:</b> {profile.displayName}</div>
-              <div><b>Bio:</b> {profile.bio}</div>
-              <div><b>Location:</b> {profile.location}</div>
-              <button className="mt-2 mb-1" onClick={handleEdit}>Edit Profile</button>
-              <button className="mt-2 mb-1" onClick={() => setShowFollowers(f => !f)}>
-                {showFollowers ? 'Hide Followers' : 'View Followers'}
-              </button>
-              <button className="mt-2 mb-1" onClick={() => setShowFollowing(f => !f)}>
-                {showFollowing ? 'Hide Following' : 'View Following'}
-              </button>
-            </div>
-          )}
-          {editing && (
-            <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label>Display Name</label>
-                <input name="displayName" value={form.displayName} onChange={handleChange} />
-              </div>
-              <div className="form-group">
-                <label>Bio</label>
-                <input name="bio" value={form.bio} onChange={handleChange} />
-              </div>
-              <div className="form-group">
-                <label>Location</label>
-                <input name="location" value={form.location} onChange={handleChange} />
-              </div>
-              <button type="submit" className="mt-2">Save</button>
-              <button type="button" className="mt-2 ml-1" onClick={() => setEditing(false)}>Cancel</button>
-            </form>
-          )}
-          {showFollowers && <Followers />}
-          {showFollowing && <FollowingList />}
+    <div className="card" style={{ maxWidth: 500, margin: '2.5rem auto' }}>
+      <h2 style={{ color: 'var(--color-primary)', fontWeight: 900, marginBottom: 18 }}>My Profile</h2>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem', marginBottom: '1.2rem' }}>
+        <span className="avatar" title="Me">{getInitials(getCurrentUsername())}</span>
+        <div>
+          <div><b>Display Name:</b> {profile.displayName}</div>
+          <div><b>Bio:</b> {profile.bio}</div>
+          <div><b>Location:</b> {profile.location}</div>
         </div>
       </div>
+      <div className="profile-actions-row">
+        <button onClick={handleEdit}>Edit Profile</button>
+        <button onClick={() => { setShowFollowers(f => !f); setShowFollowing(false); }}>View Followers</button>
+        <button onClick={() => { setShowFollowing(f => !f); setShowFollowers(false); }}>View Following</button>
+      </div>
+      {editing && (
+        <form onSubmit={handleSubmit} style={{ marginTop: 18 }}>
+          <div className="form-group">
+            <label>Display Name</label>
+            <input name="displayName" value={editForm.displayName} onChange={handleChange} />
+          </div>
+          <div className="form-group">
+            <label>Bio</label>
+            <input name="bio" value={editForm.bio} onChange={handleChange} />
+          </div>
+          <div className="form-group">
+            <label>Location</label>
+            <input name="location" value={editForm.location} onChange={handleChange} />
+          </div>
+          {error && <div className="text-danger mb-1">{error}</div>}
+          <div className="center-btn-row">
+            <button type="submit">Save</button>
+            <button type="button" className="ml-1" onClick={handleCancel}>Cancel</button>
+          </div>
+        </form>
+      )}
+      {showFollowers && <div style={{marginTop: '1.2rem'}}><Followers /></div>}
+      {showFollowing && <div style={{marginTop: '1.2rem'}}><FollowingList /></div>}
     </div>
   );
 }
