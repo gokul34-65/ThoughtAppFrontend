@@ -487,7 +487,7 @@ li {
     border-radius: 8px;
   }
   .main-feed, .card, .profile-card, .admin-card {
-    padding: 0.7rem 0.5rem;
+    padding: 1.5rem 1.2rem !important;
     border-radius: 14px;
     font-size: 1em;
   }
