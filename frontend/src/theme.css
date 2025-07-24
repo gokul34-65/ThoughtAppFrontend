@@ -427,14 +427,93 @@ li {
     flex-direction: column;
     gap: 0.5rem;
     padding: 0.7rem 1rem;
+    font-size: 1em;
   }
   .main-feed, .card, .profile-card, .admin-card {
     padding: 0.7rem 0.5rem;
+    border-radius: 14px;
+    font-size: 1em;
   }
   .card.compact, .profile-card.compact { padding: 0.5rem 0.2rem; }
   .avatar {
     width: 32px;
     height: 32px;
     font-size: 1em;
+    min-width: 32px;
+    min-height: 32px;
+  }
+  .nav-links {
+    gap: 0.7rem;
+    flex-wrap: wrap;
+    font-size: 1em;
+  }
+  .display-name, .user-name, .username {
+    font-size: 1em;
+    word-break: break-word;
+  }
+  .action-bar {
+    gap: 1.2rem;
+    font-size: 1em;
+    flex-wrap: wrap;
+  }
+  button, .icon-btn {
+    font-size: 1em;
+    min-width: 40px;
+    min-height: 40px;
+    padding: 0.5em 0.8em;
+    border-radius: 10px;
+  }
+  input, textarea {
+    font-size: 1em;
+    padding: 0.6em 0.8em;
+    border-radius: 12px;
+  }
+  .post-input {
+    padding: 0.8em 1em;
+    font-size: 1em;
+    border-radius: 14px;
+  }
+  .post-btn {
+    padding: 0.6em 1.2em;
+    font-size: 1em;
+    border-radius: 14px;
+  }
+  h2, h3, h4 {
+    font-size: 1.2em;
+    margin-bottom: 0.7em;
+  }
+  ul {
+    padding-left: 0;
+  }
+  li.card {
+    margin-bottom: 1.2rem;
+    padding: 1rem 0.7rem 0.7rem 0.7rem;
+    border-radius: 14px;
+  }
+  .user-header {
+    gap: 0.3rem;
+  }
+  .form-group label {
+    font-size: 1em;
+  }
+  .profile-card, .admin-card {
+    padding: 1rem 0.7rem;
+    border-radius: 14px;
+  }
+  .navbar-icons {
+    gap: 0.7rem;
+  }
+  .navbar-icon {
+    font-size: 1.2em;
+    min-width: 36px;
+    min-height: 36px;
+  }
+  .input-with-arrow input[type="text"],
+  .input-with-arrow input:not([type]) {
+    padding-right: 2em;
+  }
+  .input-arrow-btn svg {
+    width: 1.1em;
+    height: 1.1em;
   }
 } 
