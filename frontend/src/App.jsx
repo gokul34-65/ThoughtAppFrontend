@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import api from './api';
 import { useParams } from 'react-router-dom';
 import './theme.css';
-import { FaRegComment, FaShare, FaRegImage, FaRegStar, FaStar } from 'react-icons/fa';
+import { FaRegComment, FaShare, FaRegImage, FaRegStar, FaStar, FaUserPlus, FaUserCheck, FaSpinner } from 'react-icons/fa';
 
 function useAuth() {
   return Boolean(localStorage.getItem('token'));
@@ -125,13 +125,22 @@ function FollowButton({ username, isFollowing, onToggle }) {
     }
   };
 
-  if (isFollowing === undefined) return <span style={{ marginLeft: 8 }}>...</span>;
+  // Shrink icon and button, align center, reduce margin
+  if (isFollowing === undefined) return (
+    <span style={{ marginLeft: 6, display: 'inline-flex', alignItems: 'center', height: '1.7em' }}>
+      <FaSpinner className="icon-spin" style={{ fontSize: '1em', verticalAlign: 'middle' }} />
+    </span>
+  );
   return (
-    <span style={{ marginLeft: 8 }}>
+    <span style={{ marginLeft: 6, display: 'inline-flex', alignItems: 'center', height: '1.7em' }}>
       {isFollowing ? (
-        <button onClick={handleUnfollow} disabled={loading} style={{ fontSize: '0.9em' }}>Unfollow</button>
+        <button onClick={handleUnfollow} disabled={loading} className="icon-btn" title="Unfollow" style={{ background: 'none', boxShadow: 'none', padding: 0, margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', height: '1.7em', width: '1.7em' }}>
+          {loading ? <FaSpinner className="icon-spin" style={{ fontSize: '1em', verticalAlign: 'middle' }} /> : <FaUserCheck style={{ color: '#22c55e', fontSize: '1em', verticalAlign: 'middle', background: 'none' }} />}
+        </button>
       ) : (
-        <button onClick={handleFollow} disabled={loading} style={{ fontSize: '0.9em' }}>Follow</button>
+        <button onClick={handleFollow} disabled={loading} className="icon-btn" title="Follow" style={{ background: 'none', boxShadow: 'none', padding: 0, margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', height: '1.7em', width: '1.7em' }}>
+          {loading ? <FaSpinner className="icon-spin" style={{ fontSize: '1em', verticalAlign: 'middle' }} /> : <FaUserPlus style={{ fontSize: '1em', verticalAlign: 'middle', background: 'none' }} />}
+        </button>
       )}
       {error && <span style={{ color: 'red', marginLeft: 4 }}>{error}</span>}
     </span>
@@ -470,10 +479,9 @@ function Home() {
               <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.7rem'}}>
                 <div style={{display:'flex', alignItems:'center', gap:'1rem'}}>
                   <span className="avatar" title={post.username}>{getInitials(post.username)}</span>
-                  <div>
-                    <span className="display-name">{post.username}</span>
-                    <span className="username">@{post.username}</span>
-                    <span className="timestamp">· 2h</span>
+                  <div style={{display:'flex', alignItems:'center', gap:'0.4rem'}}>
+                    <Link to={`/user/${post.username}`} className="display-name" style={{fontWeight:800, textDecoration:'none', color:'inherit', cursor:'pointer'}}>{post.username}</Link>
+                    <FollowButton username={post.username} isFollowing={followStatus[post.username]} onToggle={handleFollowToggle} />
                   </div>
                 </div>
               </div>
@@ -768,10 +776,9 @@ function Feed() {
               <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.7rem'}}>
                 <div style={{display:'flex', alignItems:'center', gap:'1rem'}}>
                   <span className="avatar" title={post.username}>{getInitials(post.username)}</span>
-                  <div>
-                    <span className="display-name">{post.username}</span>
-                    <span className="username">@{post.username}</span>
-                    <span className="timestamp">· 2h</span>
+                  <div style={{display:'flex', alignItems:'center', gap:'0.4rem'}}>
+                    <Link to={`/user/${post.username}`} className="display-name" style={{textDecoration:'none', color:'inherit', cursor:'pointer'}}>{post.username}</Link>
+                    <FollowButton username={post.username} isFollowing={followStatus[post.username]} onToggle={handleFollowToggle} />
                   </div>
                 </div>
               </div>
@@ -946,11 +953,7 @@ function MyPosts() {
               <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.7rem'}}>
                 <div style={{display:'flex', alignItems:'center', gap:'1rem'}}>
                   <span className="avatar" title={currentUsername}>{getInitials(currentUsername)}</span>
-                  <div>
-                    <span className="display-name">{currentUsername}</span>
-                    <span className="username">@{currentUsername}</span>
-                    <span className="timestamp">· 2h</span>
-                  </div>
+                  <span className="display-name">{currentUsername}</span>
                 </div>
               </div>
               <div style={{flex:1}}>
@@ -1245,10 +1248,9 @@ function StarredPosts() {
               <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.7rem'}}>
                 <div style={{display:'flex', alignItems:'center', gap:'1rem'}}>
                   <span className="avatar" title={post.username}>{getInitials(post.username)}</span>
-                  <div>
-                    <span className="display-name">{post.username}</span>
-                    <span className="username">@{post.username}</span>
-                    <span className="timestamp">· 2h</span>
+                  <div style={{display:'flex', alignItems:'center', gap:'0.4rem'}}>
+                    <Link to={`/user/${post.username}`} className="display-name" style={{textDecoration:'none', color:'inherit', cursor:'pointer'}}>{post.username}</Link>
+                    <FollowButton username={post.username} isFollowing={followStatus[post.username]} onToggle={handleFollowToggle} />
                   </div>
                 </div>
               </div>
