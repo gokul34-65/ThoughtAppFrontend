@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import api from './api';
 import { useParams } from 'react-router-dom';
 import './theme.css';
-import { FaRegComment, FaShare, FaRegImage, FaRegStar, FaStar, FaUserPlus, FaUserCheck, FaSpinner } from 'react-icons/fa';
+import { FaRegComment, FaShare, FaRegImage, FaRegStar, FaStar, FaUserPlus, FaUserCheck, FaSpinner, FaBars, FaTimes } from 'react-icons/fa';
 
 function useAuth() {
   return Boolean(localStorage.getItem('token'));
@@ -47,35 +47,47 @@ function NavBar() {
   const isAdmin = useIsAdmin();
   const navigate = useNavigate();
   const username = getCurrentUsername();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     navigate('/login');
+    setMenuOpen(false);
   };
 
+  // Close menu on route change
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [window.location.pathname]);
+
+  // Responsive burger menu
   return (
-    <nav>
-      <div className="nav-brand">
-        <span style={{fontWeight:900, fontSize:'1.5em', color:'var(--color-primary)'}}>ThoughtApp</span>
+    <nav className="navbar-responsive">
+      <button className="burger-menu" aria-label="Open menu" onClick={() => setMenuOpen(m => !m)}>
+        {menuOpen ? <FaTimes /> : <FaBars />}
+      </button>
+      <div className="nav-brand mobile-nav-brand">
+        <span>ThoughtApp</span>
       </div>
-      <div className="nav-links">
-        <Link to="/">Home</Link>
+      <div className={`nav-links${menuOpen ? ' open' : ''}`}>
+        <Link to="/" onClick={()=>setMenuOpen(false)}>Home</Link>
         {isAuth ? (
           <>
-            <Link to="/feed">Feed</Link>
-            <Link to="/myposts">My Posts</Link>
-            <Link to="/starred">Starred</Link>
-            <Link to="/profile" aria-label="Profile" className="avatar avatar-btn" title={username} style={{marginLeft:'0.5rem'}}>{getInitials(username)}</Link>
-            {isAdmin && <Link to="/admin">Admin</Link>}
+            <Link to="/feed" onClick={()=>setMenuOpen(false)}>Feed</Link>
+            <Link to="/myposts" onClick={()=>setMenuOpen(false)}>My Posts</Link>
+            <Link to="/starred" onClick={()=>setMenuOpen(false)}>Starred</Link>
+            <Link to="/profile" aria-label="Profile" className="avatar avatar-btn" title={username} style={{marginLeft:'0.5rem'}} onClick={()=>setMenuOpen(false)}>{getInitials(username)}</Link>
+            {isAdmin && <Link to="/admin" onClick={()=>setMenuOpen(false)}>Admin</Link>}
             <button onClick={handleLogout}>Logout</button>
           </>
         ) : (
           <>
-            <Link to="/login">Login</Link>
-            <Link to="/register">Register</Link>
+            <Link to="/login" onClick={()=>setMenuOpen(false)}>Login</Link>
+            <Link to="/register" onClick={()=>setMenuOpen(false)}>Register</Link>
           </>
         )}
       </div>
+      {/* Only mobile-specific nav layout is handled in theme.css media query */}
     </nav>
   );
 }
@@ -527,9 +539,9 @@ function Login() {
   };
 
   return (
-    <div className="card" style={{ maxWidth: 350, margin: '2rem auto' }}>
-      <h2>Login</h2>
-      <form onSubmit={handleSubmit}>
+    <div className="card" style={{ maxWidth: 400, margin: '2.5rem auto' }}>
+      <h2 style={{ textAlign: 'center', marginBottom: 24 }}>Login</h2>
+      <form onSubmit={handleSubmit} autoComplete="on">
         <div className="form-group">
           <label>Username</label>
           <input value={username} onChange={e => setUsername(e.target.value)} required />
@@ -539,7 +551,9 @@ function Login() {
           <input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
         </div>
         {error && <div className="text-danger mb-1">{error}</div>}
-        <button type="submit">Login</button>
+        <div className="center-btn-row">
+          <button type="submit">Login</button>
+        </div>
       </form>
       <p className="mt-2 text-muted">Don't have an account? <Link to="/register">Register</Link></p>
     </div>
@@ -578,9 +592,9 @@ function Register() {
   };
 
   return (
-    <div className="card" style={{ maxWidth: 350, margin: '2rem auto' }}>
-      <h2>Register</h2>
-      <form onSubmit={handleSubmit}>
+    <div className="card" style={{ maxWidth: 400, margin: '2.5rem auto' }}>
+      <h2 style={{ textAlign: 'center', marginBottom: 24 }}>Register</h2>
+      <form onSubmit={handleSubmit} autoComplete="on">
         <div className="form-group">
           <label>Username</label>
           <input name="username" value={form.username} onChange={handleChange} required />
@@ -603,7 +617,9 @@ function Register() {
         </div>
         {error && <div className="text-danger mb-1">{error}</div>}
         {success && <div className="text-success mb-1">{success}</div>}
-        <button type="submit">Register</button>
+        <div className="center-btn-row">
+          <button type="submit">Register</button>
+        </div>
       </form>
       <p className="mt-2 text-muted">Already have an account? <Link to="/login">Login</Link></p>
     </div>
